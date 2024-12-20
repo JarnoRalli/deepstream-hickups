@@ -1,0 +1,11 @@
+protocols: [tcp,udp]
+
+paths:
+  all:
+    source: publisher  # Allows publishing from RTSP publishers like GStreamer or FFmpeg
+    publishUser: ""    # No username required to publish
+    publishPass: ""    # No password required to publish
+    readUser: ""       # No username required to read
+    readPass: ""       # No password required to read
+    disablePublisherOverride: no  # Allow one publisher to override another
+
