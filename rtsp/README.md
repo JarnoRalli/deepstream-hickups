@@ -5,9 +5,14 @@ error messages indicating what the error might be caused by.
 
 Tested using
 * Setup 1
+  * Desktop x64 with AMD CPU
   * NVIDIA-SMI 565.57.01 Driver Version: 565.57.01 CUDA Version: 12.7
   * NVIDIA Corporation GP104 [GeForce GTX 1070] (rev a1)
   * Deepstream 7.0
+* Setup 2
+  * Jetson Xavier NX
+  * NVIDIA Jetson Xavier NX Developer Kit - Jetpack 5.1 [L4T 35.2.1]
+  * Deepstream 6.2
 
 ## 1. Contents
 
@@ -84,6 +89,8 @@ gst-launch-1.0 rtspsrc location=rtsp://localhost:8554/camera1 protocols=tcp late
 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! autovideosink
 ```
 
+### 2.1 x64 Setup
+
 However, when trying to playback either of the streams using a pipeline that uses Deepstream's `nvv4l2decoder` as follows:
 
 ```bash
@@ -121,9 +128,28 @@ The only indication that something might be wrong is:
 Got context from element 'eglglessink0': gst.egl.EGLDisplay=context, display=(GstEGLDisplay)NULL;
 ```
 
-Starting the pipeline with GST debug level 3 doesn't reveal anything obvious either. If a) RTSP streams have been set up
-incorrectly, or b) Deepstream doesn't fully support RTSP streams, some type of error message would make life easier for the developers.
+Starting the pipeline with GST debug level 3 doesn't reveal anything obvious either. If a proper stream format cannot be negoatiated, 
+typically GStreamer components print an error message out.
 
+### 2.2 Jetson Setup
+
+Running the following in the Jetson Xavier NX:
+
+
+```bash
+gst-launch-1.0 rtspsrc location=rtsp://localhost.213:8554/camera1 protocols=tcp latency=500 \
+! rtph264depay ! h264parse ! nvv4l2decoder ! queue ! nvvideoconvert ! queue \
+! mux.sink_1 nvstreammux name=mux width=1920 height=1080 batch-size=1 live-source=1 \
+! queue ! nvvideoconvert ! queue ! nvdsosd ! queue ! nvegltransform ! nveglglessink
+```
+
+Produces the following error message.
+
+```bash
+Stream format not found, dropping the frame
+```
+
+, so at least the developer has something to start debugging from. 
 
 ## 3. GStreamer RTSP Server
 
@@ -161,7 +187,9 @@ gst-launch-1.0 rtspsrc location=rtsp://localhost:8554/camera1 protocols=tcp late
 ! rtph264depay ! h264parse ! avdec_h264 ! videoconvert ! autovideosink
 ```
 
-However, when trying to playback either of the streams using a pipeline that uses Deepstream's `nvv4l2decoder` as follows:
+### 3.1 x64 Setup
+
+Following works in the x64 setup:
 
 ```bash
 gst-launch-1.0 rtspsrc location=rtsp://localhost:8554/camera1 protocols=tcp latency=500 \
@@ -170,3 +198,20 @@ gst-launch-1.0 rtspsrc location=rtsp://localhost:8554/camera1 protocols=tcp late
 ! queue ! nvvideoconvert ! queue ! nvdsosd ! queue ! nveglglessink
 ```
 
+### 3.2 Jetson
+
+Following works in the Jetson setup:
+
+```bash
+gst-launch-1.0 rtspsrc location=rtsp://localhost.213:8554/camera1 protocols=tcp latency=500 \
+! rtph264depay ! h264parse ! nvv4l2decoder ! queue ! nvvideoconvert ! queue \
+! mux.sink_1 nvstreammux name=mux width=1920 height=1080 batch-size=1 live-source=1 \
+! queue ! nvvideoconvert ! queue ! nvdsosd ! queue ! nvegltransform ! nveglglessink
+```
+
+## 4 Conclusion
+
+I often see differences in the level 
+of error messages being printed out depending on the HW that Deepstream components are run on. Sometimes these differences can be found from Nvidia's forums, but quite often it happens
+that there are no proper error messages and the developer is left at guessing what might be the causes for the problem. From time-to-market perspective, the longer it takes to iron out the kinks,
+the less sales we can generate.
