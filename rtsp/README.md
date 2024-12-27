@@ -203,7 +203,7 @@ gst-launch-1.0 rtspsrc location=rtsp://localhost:8554/camera1 protocols=tcp late
 Following works in the Jetson setup:
 
 ```bash
-gst-launch-1.0 rtspsrc location=rtsp://localhost.213:8554/camera1 protocols=tcp latency=500 \
+gst-launch-1.0 rtspsrc location=rtsp://localhost:8554/camera1 protocols=tcp latency=500 \
 ! rtph264depay ! h264parse ! nvv4l2decoder ! queue ! nvvideoconvert ! queue \
 ! mux.sink_1 nvstreammux name=mux width=1920 height=1080 batch-size=1 live-source=1 \
 ! queue ! nvvideoconvert ! queue ! nvdsosd ! queue ! nvegltransform ! nveglglessink
